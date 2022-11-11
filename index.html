@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Timer</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+    <link rel="stylesheet" type="text/css" href="./styles.css">
+  </head>
+  <body>
+    <span id="close-button" class="close-button align-center">✖</span>
+    <div class="align-center">
+      <div id="start" class="display-inline green-font">
+        <p>Work <b>started</b> at</p>
+        <h1 id="start-hours">00</h1>
+        <small>hh</small>
+        <h1>:</h1>
+        <h1 id="start-minutes">00</h1>
+        <small>mm</small>
+      </div>
+      <div id="timer" class="display-inline blue-font">
+        <p>You <b>work</b> for</p>
+        <h1 id="timer-hours">00</h1>
+        <small>hh</small>
+        <h1>:</h1>
+        <h1 id="timer-minutes">00</h1>
+        <small>mm</small>
+        <h1>:</h1>
+        <h1 id="timer-seconds">00</h1>
+        <small>ss</small>
+      </div>
+      <div id="pause" class="display-inline purple-font hidden">
+        <p>You <b>pause</b> for</p>
+        <h1 id="pause-hours">00</h1>
+        <small>hh</small>
+        <h1>:</h1>
+        <h1 id="pause-minutes">00</h1>
+        <small>mm</small>
+        <h1>:</h1>
+        <h1 id="pause-seconds">00</h1>
+        <small>ss</small>
+      </div>
+      <br>
+      <div class="display-inline no-drag">
+        <h1 id="play-pause-button" title="Play/Pause" class="pointer">⏯</h1>
+        <h1 id="reset-button" title="Reset" class="pointer">⏪</h1>
+      </div>
+    </div>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>

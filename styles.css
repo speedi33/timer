@@ -1,0 +1,46 @@
+body {
+    font-family: 'Courier New', Courier, monospace;
+    -webkit-app-region: drag;
+}
+
+.no-drag { -webkit-app-region: no-drag; }
+
+@media (prefers-color-scheme: dark) {
+    body { background: #333; color: white; }
+}
+  
+@media (prefers-color-scheme: light) {
+    body { background: #ddd; color: black; }
+}
+
+.align-center { text-align: center; }
+
+.display-inline h1 { display: inline; }
+
+.green-font { color: green; }
+
+.blue-font { color: blue; }
+
+.yellow-font { color: yellow; }
+
+.red-font { color: red; }
+
+.purple-font { color: purple; }
+
+.pointer { cursor: pointer; }
+.pointer:hover { opacity: 0.5; }
+
+.hidden { display: none; }
+
+.close-button {
+    height: 25px;
+    width: 50px;
+    cursor: pointer;
+    display: block;
+    float: right;  
+    z-index: 3;
+    position: absolute;
+    right: 0px;
+    top: 0px;
+}
+.close-button:hover { background: red; }

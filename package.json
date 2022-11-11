@@ -1,0 +1,23 @@
+{
+  "name": "timer",
+  "version": "1.0.0",
+  "description": "A timer app to measure your work time",
+  "main": "main.js",
+  "build": {
+    "appId": "com.luho.timer",
+    "win": {
+      "target": "portable"
+    }
+  },
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "luho",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^21.2.3",
+    "electron-builder": "^23.6.0"
+  }
+}
