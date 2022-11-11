@@ -1,10 +1,8 @@
 const { app, Tray, Menu, BrowserWindow, nativeImage, ipcMain, nativeTheme, screen } = require('electron');
 const path = require('path');
-const util = require('util');
-const exec = util.promisify(require('child_process').exec);
-const StartUp = require('./startup');
+const AutoStart = require('./autostart');
 
-const startUp = new StartUp(app.getName());
+const autoStart = new AutoStart(app.getName());
 const windowWidth = 330;
 const windowHeight = 250;
 const windowHeightForPause = 335;
@@ -169,7 +167,7 @@ const buildMenuTemplate = (isRegistered) => {
             { label: 'Reset To System Theme', click: resetToSystemDarkMode },
         ]},
         { label: 'Settings', submenu: [
-            { label: 'Set As Autostart', type: 'checkbox', checked: isRegistered, click: startUp.toggle }
+            { label: 'Set As Autostart', type: 'checkbox', checked: isRegistered, click: autoStart.toggle }
         ]},
         { label: 'Exit', click: () => { app.isQuiting = true; app.quit(); } }
     ];
@@ -183,7 +181,7 @@ const createTray = (isRegistered) => {
 }
 
 app.whenReady().then(() => {
-    startUp.isRegisteredForAutoStart().then(isRegistered => {
+    autoStart.isRegisteredForAutoStart().then(isRegistered => {
         createTray(isRegistered);
         createMainWindow();
     });
