@@ -2,12 +2,15 @@ const { app, Tray, Menu, BrowserWindow, nativeImage, ipcMain, nativeTheme, scree
 const path = require('path');
 const AutoStart = require('./autostart');
 
+const isMacOs = process.platform === 'darwin';
+
 const autoStart = new AutoStart(app.getName());
 const windowWidth = 330;
 const windowHeight = 250;
 const windowHeightForPause = 335;
 const windowMarginRight = 5;
 const windowMarginBottom = 45;
+const windowMarginBottomMacOs = 95;
 
 let tray;
 let mainWindow;
@@ -155,9 +158,15 @@ const showPauseTimer = () => {
 const positionMainWindow = () => {
     const mainWindowBounds = mainWindow.getBounds();
     const screenOfMainWindow = screen.getDisplayNearestPoint({x: mainWindowBounds.x, y: mainWindowBounds.y});
-    mainWindow.setPosition(
-        screenOfMainWindow.bounds.width - mainWindowBounds.width - windowMarginRight, 
-        screenOfMainWindow.bounds.height - mainWindowBounds.height - windowMarginBottom);
+    
+    const x = screenOfMainWindow.bounds.width - mainWindowBounds.width - windowMarginRight;
+    let y = screenOfMainWindow.bounds.height - mainWindowBounds.height;
+    if (isMacOs) {
+        y -= windowMarginBottomMacOs;
+    } else {
+        y -= windowMarginBottom;
+    }
+    mainWindow.setPosition(x, y);
 }
 
 const buildMenuTemplate = (isRegistered) => {
@@ -174,10 +183,18 @@ const buildMenuTemplate = (isRegistered) => {
 }
 
 const createTray = (isRegistered) => {
-    tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'timer.png')));
+    let trayIcon = nativeImage.createFromPath(path.join(__dirname, 'timer.png'));
+    if (isMacOs) {
+        trayIcon = trayIcon.resize({height: 20});
+    }
+    tray = new Tray(trayIcon);
     const trayContextMenu = Menu.buildFromTemplate(buildMenuTemplate(isRegistered));
     tray.setContextMenu(trayContextMenu);
-    tray.on("double-click", (_event) => { toggleMainWindow(); });
+    if (isMacOs) {
+        tray.on('click', (_event) => {toggleMainWindow();});
+    } else {
+        tray.on('double-click', (_event) => { toggleMainWindow(); });
+    }
 }
 
 app.whenReady().then(() => {
