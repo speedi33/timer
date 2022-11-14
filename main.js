@@ -43,10 +43,12 @@ const toggleDarkMode = () => {
     } else {
         nativeTheme.themeSource = 'dark';
     }
+    mainWindow.webContents.send('dark-mode', nativeTheme.shouldUseDarkColors);
 }
 
 const resetToSystemDarkMode = () => {
     nativeTheme.themeSource = 'system';
+    mainWindow.webContents.send('dark-mode', nativeTheme.shouldUseDarkColors);
 }
 
 const resizeMainWindow = (newWidth, newHeight) => {

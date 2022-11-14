@@ -32,7 +32,11 @@ window.addEventListener('DOMContentLoaded', () => {
         
         const hours = parseInt(hoursMinutesSeconds[0]);
         if (hours >= 8 && hours < 10) {
-            sections.work.classList.remove('blue-font');
+            if (sections.work.classList.contains('cyan-font')) { // dark mode
+                sections.work.classList.remove('cyan-font');
+            } else if (sections.work.classList.contains('blue-font')) { // light mode
+                sections.work.classList.remove('blue-font')
+            }
             sections.work.classList.add('yellow-font');
         } else if (hours >= 10) {
             sections.work.classList.remove('yellow-font');
@@ -60,12 +64,21 @@ window.addEventListener('DOMContentLoaded', () => {
             pauseSeconds.innerText = hoursMinutesSeconds[2];
         }
     });
+
+    ipcRenderer.on('dark-mode', (_event, value) => {
+        if (value) { // dark mode
+            sections.work.classList.remove('blue-font');
+            sections.work.classList.add('cyan-font');
+        } else { // light mode
+            sections.work.classList.remove('cyan-font');
+            sections.work.classList.add('blue-font');
+        }
+    });
 });
 
 contextBridge.exposeInMainWorld('timerButton', {
     playPause: () => ipcRenderer.invoke('timer-play-pause'),
     reset: () => ipcRenderer.invoke('timer-reset')
 });
-
 contextBridge.exposeInMainWorld('closeButton', { click: () => ipcRenderer.invoke('click-close-button') });
 contextBridge.exposeInMainWorld('menuButton', { click: () => ipcRenderer.invoke('click-menu-button') });

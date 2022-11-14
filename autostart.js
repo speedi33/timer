@@ -25,7 +25,7 @@ class AutoStart {
             dialog.showMessageBox({
                 type: 'warning', 
                 message: 'Unfortunately, \'Set As Autostart\' is currently unsupported on ' + 
-                    ' MacOS and needs to be configured manually.\n' +
+                    'MacOS and needs to be configured manually.\n' +
                     'Go to System Settings > Users & Groups > Login Items and add Timer.app via the \'+\'.',
                 title: 'Set As Autostart currently unsupported',
                 icon: nativeImage.createFromPath(path.join(__dirname, 'timer.png'))
