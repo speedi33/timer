@@ -9,3 +9,7 @@ document.getElementById('reset-button').addEventListener('click', async () => {
 document.getElementById('close-button').addEventListener('click', async () => {
     await window.closeButton.click();
 });
+
+document.getElementById('menu-button').addEventListener('click', async () => {
+    await window.menuButton.click();
+});

@@ -12,6 +12,7 @@ const windowMarginRight = 5;
 const windowMarginBottom = 45;
 const windowMarginBottomMacOs = 95;
 const shortcutPlayPause = 'Ctrl+Shift+Space';
+const shortcutReset = 'Ctrl+Shift+0';
 
 let tray;
 let mainWindow;
@@ -19,7 +20,7 @@ let timerSeconds = 0;
 let pauseSeconds = 0;
 let intervalId;
 let pauseIntervalId;
-
+let balloonInterval = 0;
 
 const stopTimer = () => {
     clearInterval(intervalId);
@@ -90,13 +91,14 @@ const registerIpcMainHandles = () => {
     ipcMain.handle('timer-play-pause', toggleTimer);
     ipcMain.handle('timer-reset', resetTimer);
     ipcMain.handle('click-close-button', () => { mainWindow.close(); });
+    ipcMain.handle('click-menu-button', () => { tray.popUpContextMenu(); });
 }
 
-const toggleShortcutRegistration = () => {
-    if (globalShortcut.isRegistered(shortcutPlayPause)) {
-        globalShortcut.unregister(shortcutPlayPause);
+const toggleShortcutRegistration = (shortcut, shortcutFunction) => {
+    if (globalShortcut.isRegistered(shortcut)) {
+        globalShortcut.unregister(shortcut);
     } else {
-        globalShortcut.register(shortcutPlayPause, toggleTimer);
+        globalShortcut.register(shortcut, shortcutFunction);
     }
 }
 
@@ -146,6 +148,19 @@ const toggleMainWindow = () => {
 const sendTimerSeconds = () => {
     timerSeconds += 1;
     sendSeconds(timerSeconds, 'timer', 'You work for');
+
+    if (balloonInterval > 0) {
+        const secondsInAnHour = 3600;
+        if (timerSeconds === balloonInterval * secondsInAnHour) {
+            const workedHours = Math.floor(timerSeconds / secondsInAnHour);
+            tray.displayBalloon({
+                title: 'Timer', 
+                content: `You are working now for ${workedHours} hours.`, 
+                respectQuietTime: true,
+                iconType: 'info'
+            });
+        }
+    }
 }
 
 const sendPauseSeconds = () => {
@@ -181,16 +196,32 @@ const positionMainWindow = () => {
     mainWindow.setPosition(x, y);
 }
 
-const buildMenuTemplate = (isAutoStartRegistered, isShortcutRegistered) => {
+const buildMenuTemplate = (isAutoStartRegistered, isShortcutPlayPauseRegistered, isShortcutResetRegistered) => {
+    const showNotificationsSubmenu = [
+        { label: 'Never', type: 'radio', click: () => { balloonInterval = 0; } },
+        { label: 'Every Hour', type: 'radio', click: () => { balloonInterval = 1; }  },
+        { label: 'Every 2 Hours', type: 'radio', click: () => { balloonInterval = 2; }  },
+        { label: 'Every 4 Hours', type: 'radio', click: () => { balloonInterval = 4; }  },
+    ];
+    const useShortcutsSubmenu = [
+        { label: `Use ${shortcutPlayPause} For Pause/Play`, type: 'checkbox', checked: isShortcutPlayPauseRegistered,
+            click: () => {toggleShortcutRegistration(shortcutPlayPause, toggleTimer);} },
+        { label: `Use ${shortcutReset} For Reset`, type: 'checkbox', checked: isShortcutResetRegistered,
+            click: () => {toggleShortcutRegistration(shortcutReset, resetTimer);} },
+    ];
+    const settingsSubmenu = [
+        { label: 'Set As Autostart', type: 'checkbox', checked: isAutoStartRegistered, click: autoStart.toggle },
+        { label: 'Use Shortcuts', submenu: useShortcutsSubmenu },
+        { label: 'Show Notifications', submenu: showNotificationsSubmenu }
+    ];
+    const appearanceSubmenu = [
+        { label: 'Toggle Dark Mode', click: toggleDarkMode },
+        { label: 'Reset To System Theme', click: resetToSystemDarkMode },
+    ]
+
     return [
-        { label: 'Appearance', submenu: [
-            { label: 'Toggle Dark Mode', click: toggleDarkMode },
-            { label: 'Reset To System Theme', click: resetToSystemDarkMode },
-        ]},
-        { label: 'Settings', submenu: [
-            { label: 'Set As Autostart', type: 'checkbox', checked: isAutoStartRegistered, click: autoStart.toggle },
-            { label: `Use ${shortcutPlayPause} For Pause And Play`, type: 'checkbox', checked: isShortcutRegistered, click: toggleShortcutRegistration }
-        ]},
+        { label: 'Appearance', submenu: appearanceSubmenu },
+        { label: 'Settings', submenu: settingsSubmenu},
         { label: 'Exit', click: () => { app.isQuiting = true; app.quit(); } }
     ];
 }
@@ -201,8 +232,9 @@ const createTray = (isAutoStartRegistered) => {
         trayIcon = trayIcon.resize({height: 20});
     }
     tray = new Tray(trayIcon);
-    const isShortcutRegistered = globalShortcut.isRegistered(shortcutPlayPause);
-    const trayContextMenu = Menu.buildFromTemplate(buildMenuTemplate(isAutoStartRegistered, isShortcutRegistered));
+    const isShortcutPlayPauseRegistered = globalShortcut.isRegistered(shortcutPlayPause);
+    const isShortcutResetRegistered = globalShortcut.isRegistered(shortcutReset);
+    const trayContextMenu = Menu.buildFromTemplate(buildMenuTemplate(isAutoStartRegistered, isShortcutPlayPauseRegistered, isShortcutResetRegistered));
     tray.setContextMenu(trayContextMenu);
     if (isMacOs) {
         tray.on('click', (_event) => {toggleMainWindow();});
