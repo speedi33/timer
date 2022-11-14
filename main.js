@@ -1,4 +1,4 @@
-const { app, Tray, Menu, BrowserWindow, nativeImage, ipcMain, nativeTheme, screen } = require('electron');
+const { app, Tray, Menu, BrowserWindow, nativeImage, ipcMain, nativeTheme, screen, globalShortcut } = require('electron');
 const path = require('path');
 const AutoStart = require('./autostart');
 
@@ -11,6 +11,7 @@ const windowHeightForPause = 335;
 const windowMarginRight = 5;
 const windowMarginBottom = 45;
 const windowMarginBottomMacOs = 95;
+const shortcutPlayPause = 'Ctrl+Shift+Space';
 
 let tray;
 let mainWindow;
@@ -85,6 +86,20 @@ const resetPauseTimer = () => {
     }
 }
 
+const registerIpcMainHandles = () => {
+    ipcMain.handle('timer-play-pause', toggleTimer);
+    ipcMain.handle('timer-reset', resetTimer);
+    ipcMain.handle('click-close-button', () => { mainWindow.close(); });
+}
+
+const toggleShortcutRegistration = () => {
+    if (globalShortcut.isRegistered(shortcutPlayPause)) {
+        globalShortcut.unregister(shortcutPlayPause);
+    } else {
+        globalShortcut.register(shortcutPlayPause, toggleTimer);
+    }
+}
+
 const createMainWindow = () => {
     mainWindow = new BrowserWindow({
         width: windowWidth,
@@ -110,13 +125,10 @@ const createMainWindow = () => {
     });
 
     positionMainWindow();
+    registerIpcMainHandles();
 
     // Debugging...
     //mainWindow.webContents.openDevTools();
-
-    ipcMain.handle('timer-play-pause', toggleTimer);
-    ipcMain.handle('timer-reset', resetTimer);
-    ipcMain.handle('click-close-button', () => { mainWindow.close(); });
 }
 
 const toggleMainWindow = () => {
@@ -169,26 +181,28 @@ const positionMainWindow = () => {
     mainWindow.setPosition(x, y);
 }
 
-const buildMenuTemplate = (isRegistered) => {
+const buildMenuTemplate = (isAutoStartRegistered, isShortcutRegistered) => {
     return [
         { label: 'Appearance', submenu: [
             { label: 'Toggle Dark Mode', click: toggleDarkMode },
             { label: 'Reset To System Theme', click: resetToSystemDarkMode },
         ]},
         { label: 'Settings', submenu: [
-            { label: 'Set As Autostart', type: 'checkbox', checked: isRegistered, click: autoStart.toggle }
+            { label: 'Set As Autostart', type: 'checkbox', checked: isAutoStartRegistered, click: autoStart.toggle },
+            { label: `Use ${shortcutPlayPause} For Pause And Play`, type: 'checkbox', checked: isShortcutRegistered, click: toggleShortcutRegistration }
         ]},
         { label: 'Exit', click: () => { app.isQuiting = true; app.quit(); } }
     ];
 }
 
-const createTray = (isRegistered) => {
+const createTray = (isAutoStartRegistered) => {
     let trayIcon = nativeImage.createFromPath(path.join(__dirname, 'timer.png'));
     if (isMacOs) {
         trayIcon = trayIcon.resize({height: 20});
     }
     tray = new Tray(trayIcon);
-    const trayContextMenu = Menu.buildFromTemplate(buildMenuTemplate(isRegistered));
+    const isShortcutRegistered = globalShortcut.isRegistered(shortcutPlayPause);
+    const trayContextMenu = Menu.buildFromTemplate(buildMenuTemplate(isAutoStartRegistered, isShortcutRegistered));
     tray.setContextMenu(trayContextMenu);
     if (isMacOs) {
         tray.on('click', (_event) => {toggleMainWindow();});
@@ -198,8 +212,8 @@ const createTray = (isRegistered) => {
 }
 
 app.whenReady().then(() => {
-    autoStart.isRegisteredForAutoStart().then(isRegistered => {
-        createTray(isRegistered);
+    autoStart.isRegisteredForAutoStart().then(isAutoStartRegistered => {
+        createTray(isAutoStartRegistered);
         createMainWindow();
     });
     startTimer();
