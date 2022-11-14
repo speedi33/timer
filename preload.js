@@ -67,6 +67,5 @@ contextBridge.exposeInMainWorld('timerButton', {
     reset: () => ipcRenderer.invoke('timer-reset')
 });
 
-contextBridge.exposeInMainWorld('closeButton', {
-    click: () => ipcRenderer.invoke('click-close-button')
-});
+contextBridge.exposeInMainWorld('closeButton', { click: () => ipcRenderer.invoke('click-close-button') });
+contextBridge.exposeInMainWorld('menuButton', { click: () => ipcRenderer.invoke('click-menu-button') });
