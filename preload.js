@@ -3,13 +3,13 @@ const { ipcRenderer, contextBridge } = require('electron');
 window.addEventListener('DOMContentLoaded', () => {
     const sections = {
         start: document.getElementById('start'),
-        timer: document.getElementById('timer'),
+        work: document.getElementById('work'),
         pause: document.getElementById('pause')
     };
 
-    const timerHours = document.getElementById('timer-hours');
-    const timerMinutes = document.getElementById('timer-minutes');
-    const timerSeconds = document.getElementById('timer-seconds');
+    const workHours = document.getElementById('work-hours');
+    const workMinutes = document.getElementById('work-minutes');
+    const workSeconds = document.getElementById('work-seconds');
 
     const pauseHours = document.getElementById('pause-hours');
     const pauseMinutes = document.getElementById('pause-minutes');
@@ -24,19 +24,19 @@ window.addEventListener('DOMContentLoaded', () => {
         startMinutes.innerText = hoursMinutes[1];
     });
 
-    ipcRenderer.on('timer', (_event, value) => {
+    ipcRenderer.on('work', (_event, value) => {
         const hoursMinutesSeconds = value.split(':');
-        timerHours.innerText = hoursMinutesSeconds[0];
-        timerMinutes.innerText = hoursMinutesSeconds[1];
-        timerSeconds.innerText = hoursMinutesSeconds[2];
+        workHours.innerText = hoursMinutesSeconds[0];
+        workMinutes.innerText = hoursMinutesSeconds[1];
+        workSeconds.innerText = hoursMinutesSeconds[2];
         
         const hours = parseInt(hoursMinutesSeconds[0]);
         if (hours >= 8 && hours < 10) {
-            sections.timer.classList.remove('blue-font');
-            sections.timer.classList.add('yellow-font');
+            sections.work.classList.remove('blue-font');
+            sections.work.classList.add('yellow-font');
         } else if (hours >= 10) {
-            sections.timer.classList.remove('yellow-font');
-            sections.timer.classList.add('red-font');
+            sections.work.classList.remove('yellow-font');
+            sections.work.classList.add('red-font');
         }
     });
 

@@ -1,5 +1,6 @@
 const { app, Tray, Menu, BrowserWindow, nativeImage, ipcMain, nativeTheme, screen, globalShortcut } = require('electron');
 const path = require('path');
+const Timer = require('./timer');
 const AutoStart = require('./autostart');
 
 const isMacOs = process.platform === 'darwin';
@@ -14,31 +15,26 @@ const windowMarginBottomMacOs = 95;
 const shortcutPlayPause = 'Ctrl+Shift+Space';
 const shortcutReset = 'Ctrl+Shift+0';
 
+const timers = { work: undefined, pause: undefined };
+const seconds = { work: 0, pause: 0 };
+const updateIntervalInMillis = 1000;
 let tray;
 let mainWindow;
-let timerSeconds = 0;
-let pauseSeconds = 0;
-let intervalId;
-let pauseIntervalId;
 let balloonInterval = 0;
 
-const stopTimer = () => {
-    clearInterval(intervalId);
-    intervalId = undefined;
-}
-
 const startTimer = () => {
-    intervalId = setInterval(sendTimerSeconds, 1000);
-}
-
-const stopPauseTimer = () => {
-    clearInterval(pauseIntervalId);
-    pauseIntervalId = undefined;
+    if (!timers.work) {
+        timers.work = new Timer(updateIntervalInMillis, sendTimerSeconds);
+    }
+    timers.work.start();
 }
 
 const startPauseTimer = () => {
+    if (!timers.pause) {
+        timers.pause = new Timer(updateIntervalInMillis, sendPauseSeconds);
+    }
+    timers.pause.start();
     showPauseTimer();
-    pauseIntervalId = setInterval(sendPauseSeconds, 1000);
 }
 
 const toggleDarkMode = () => {
@@ -59,37 +55,36 @@ const resizeMainWindow = (newWidth, newHeight) => {
     }
 }
 
-const toggleTimer = () => {
-    if (intervalId) {
-        stopTimer();
+const toggleWorkTimer = () => {
+    if (timers.work.isStarted()) {
+        timers.work.stop();
         startPauseTimer();
         resizeMainWindow(windowWidth, windowHeightForPause);
     } else {
         startTimer();
-        stopPauseTimer();
+        timers.pause.stop();
         resetPauseTimer();
         resizeMainWindow(windowWidth, windowHeight);
     }
     positionMainWindow();
 }
 
-const resetTimer = () => {
-    if (!mainWindow.isDestroyed()) {
-        timerSeconds = 0;
-        mainWindow.webContents.send('timer', '00:00:00');
-    }
+const resetWorkTimer = () => {
+    resetTimer('work');
 }
 
 const resetPauseTimer = () => {
-    if (!mainWindow.isDestroyed()) {
-        pauseSeconds = 0;
-        mainWindow.webContents.send('pause', '00:00:00');
-    }
+    resetTimer('pause');
+}
+
+const resetTimer = (timerType) => {
+    seconds[timerType] = 0;
+    mainWindow.webContents.send(timerType, '00:00:00');
 }
 
 const registerIpcMainHandles = () => {
-    ipcMain.handle('timer-play-pause', toggleTimer);
-    ipcMain.handle('timer-reset', resetTimer);
+    ipcMain.handle('timer-play-pause', toggleWorkTimer);
+    ipcMain.handle('timer-reset', resetWorkTimer);
     ipcMain.handle('click-close-button', () => { mainWindow.close(); });
     ipcMain.handle('click-menu-button', () => { tray.popUpContextMenu(); });
 }
@@ -145,17 +140,14 @@ const toggleMainWindow = () => {
     }
 }
 
-const sendTimerSeconds = () => {
-    timerSeconds += 1;
-    sendSeconds(timerSeconds, 'timer', 'You work for');
-
+const handleNotification = () => {
     if (balloonInterval > 0) {
         const secondsInAnHour = 3600;
-        if (timerSeconds === balloonInterval * secondsInAnHour) {
-            const workedHours = Math.floor(timerSeconds / secondsInAnHour);
+        if (seconds.work === balloonInterval * secondsInAnHour) {
+            const workedHours = Math.floor(seconds.work / secondsInAnHour);
             tray.displayBalloon({
                 title: 'Timer', 
-                content: `You are working now for ${workedHours} hours.`, 
+                content: `You work for ${workedHours}.`, 
                 respectQuietTime: true,
                 iconType: 'info'
             });
@@ -163,17 +155,22 @@ const sendTimerSeconds = () => {
     }
 }
 
-const sendPauseSeconds = () => {
-    pauseSeconds += 1;
-    sendSeconds(pauseSeconds, 'pause', 'You pause for');
+const sendTimerSeconds = () => {
+    sendSeconds('work');
+    handleNotification();
 }
 
-const sendSeconds = (seconds, endpoint, tooltipMessagePrefix) => {
+const sendPauseSeconds = () => {
+    sendSeconds('pause');
+}
+
+const sendSeconds = (timerType) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
-        const timerString = new Date(seconds * 1000).toISOString().substring(11, 19);
-        mainWindow.webContents.send(endpoint, timerString);
+        seconds[timerType] += 1;
+        const timerString = new Date(seconds[timerType] * 1000).toISOString().substring(11, 19);
+        mainWindow.webContents.send(timerType, timerString);
         if (tray) {
-            tray.setToolTip(tooltipMessagePrefix + ` ${timerString}.`);
+            tray.setToolTip(`You ${timerType} for ${timerString}.`);
         }
     }
 }
@@ -205,13 +202,13 @@ const buildMenuTemplate = (isAutoStartRegistered, isShortcutPlayPauseRegistered,
     ];
     const useShortcutsSubmenu = [
         { label: `Use ${shortcutPlayPause} For Pause/Play`, type: 'checkbox', checked: isShortcutPlayPauseRegistered,
-            click: () => {toggleShortcutRegistration(shortcutPlayPause, toggleTimer);} },
+            click: () => {toggleShortcutRegistration(shortcutPlayPause, toggleWorkTimer);} },
         { label: `Use ${shortcutReset} For Reset`, type: 'checkbox', checked: isShortcutResetRegistered,
-            click: () => {toggleShortcutRegistration(shortcutReset, resetTimer);} },
+            click: () => {toggleShortcutRegistration(shortcutReset, resetWorkTimer);} },
     ];
     const settingsSubmenu = [
         { label: 'Set As Autostart', type: 'checkbox', checked: isAutoStartRegistered, click: autoStart.toggle },
-        { label: 'Use Shortcuts', submenu: useShortcutsSubmenu },
+        { label: 'Shortcuts', submenu: useShortcutsSubmenu },
         { label: 'Show Notifications', submenu: showNotificationsSubmenu }
     ];
     const appearanceSubmenu = [
@@ -245,6 +242,7 @@ const createTray = (isAutoStartRegistered) => {
 
 app.whenReady().then(() => {
     autoStart.isRegisteredForAutoStart().then(isAutoStartRegistered => {
+        globalShortcut.register(shortcutPlayPause, toggleWorkTimer);
         createTray(isAutoStartRegistered);
         createMainWindow();
     });
