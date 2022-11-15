@@ -149,7 +149,7 @@ const handleNotification = () => {
             const workedHours = Math.floor(seconds.work / secondsInAnHour);
             tray.displayBalloon({
                 title: 'Timer', 
-                content: `You work for ${workedHours}.`, 
+                content: `You work for ${workedHours} hour${workedHours === 1 ? '' : 's'}.`, 
                 respectQuietTime: true,
                 iconType: 'info'
             });
