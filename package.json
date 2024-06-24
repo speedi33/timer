@@ -17,7 +17,7 @@
   "author": "luho",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^21.2.3",
-    "electron-builder": "^23.6.0"
+    "electron": "^31.0.2",
+    "electron-builder": "^24.13.3"
   }
 }
